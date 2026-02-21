@@ -1,4 +1,4 @@
-# THE100-Configruation
+# THEOS-Configruation
 
 In this repository you find the configuration for all of T100 / T250 builds. The configuration is modular and it was inspired by Klippain and RatOS configuration.
 
