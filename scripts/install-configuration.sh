@@ -80,7 +80,10 @@ preflight_checks
 download_configuration
 install_logs
 
-sudo "$SCRIPT_DIR"/update-configuration.sh
-sudo "$SCRIPT_DIR"/update-klipper.sh
-sudo "$SCRIPT_DIR"/update-moonraker.sh
-sudo "$SCRIPT_DIR"/install-printer-cfg.sh
+# THEOS_IMAGE_BUILD is forwarded so update-klipper.sh can skip the
+# hardware-bound steps (firmware flash + systemctl restart) when this
+# installer runs inside the CustoPiZer chroot.
+sudo THEOS_IMAGE_BUILD="${THEOS_IMAGE_BUILD:-}" "$SCRIPT_DIR"/update-configuration.sh
+sudo THEOS_IMAGE_BUILD="${THEOS_IMAGE_BUILD:-}" "$SCRIPT_DIR"/update-klipper.sh
+sudo THEOS_IMAGE_BUILD="${THEOS_IMAGE_BUILD:-}" "$SCRIPT_DIR"/update-moonraker.sh
+sudo THEOS_IMAGE_BUILD="${THEOS_IMAGE_BUILD:-}" "$SCRIPT_DIR"/install-printer-cfg.sh

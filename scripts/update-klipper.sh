@@ -199,6 +199,14 @@ install_hooks
 install_shaketune_extension
 enable_rt_runtime
 enable_rt_in_klipper_service
-systemctl stop klipper >/dev/null 2>&1 || true
-maybe_flash_firmware
-restart_klipper_service
+
+# THEOS_IMAGE_BUILD is set during the CustoPiZer chroot build, where there
+# is no MCU to flash and systemd is not running. Skip the hardware path
+# entirely; the next regular `git pull` on the printer drives the flash.
+if [ -n "${THEOS_IMAGE_BUILD:-}" ]; then
+    info "Image-build mode: skipping firmware flash and Klipper restart."
+else
+    systemctl stop klipper >/dev/null 2>&1 || true
+    maybe_flash_firmware
+    restart_klipper_service
+fi
