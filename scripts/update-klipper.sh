@@ -165,6 +165,17 @@ maybe_flash_firmware() {
     fi
 
     if [ "$soll_ok" -eq 0 ] || [ "$ist_ok" -eq 0 ]; then
+        # Recovery: when git describe fell back to a short SHA but the
+        # MCU build version carries the same SHA as its -g<sha> suffix,
+        # the commits are identical. Match -g<sha>(end|-suffix) so a
+        # tag-only mcu_raw cannot accidentally match a hex source_raw.
+        if [ "$soll_ok" -eq 0 ] && [ "$ist_ok" -eq 1 ] \
+           && [ -n "$source_raw" ] \
+           && { [[ "$mcu_raw" == *"-g${source_raw}" ]] \
+                || [[ "$mcu_raw" == *"-g${source_raw}-"* ]]; }; then
+            info "MCU firmware up-to-date (source=$source_raw, mcu=$mcu_raw)"
+            return 0
+        fi
         info "Version compare not possible (source=$source_raw, mcu=$mcu_raw) — flashing as fallback"
     elif [ "$s_maj" = "$m_maj" ] && [ "$s_min" = "$m_min" ] && [ "$s_pat" = "$m_pat" ]; then
         info "MCU firmware up-to-date (source=$source_raw, mcu=$mcu_raw)"

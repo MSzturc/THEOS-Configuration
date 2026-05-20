@@ -157,6 +157,25 @@ class FlashDecisionTest(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertTrue(self._flash_called())
 
+    def test_short_sha_matching_mcu_build_skips_flash(self):
+        """git describe returned only a short SHA (no tag reachable from
+        the current commit), but the MCU build version ends in -g<sha>
+        with the same SHA. The commits are identical, so no flash."""
+        self._set_git_soll("afbd4a43")
+        self._set_log_ist("v0.13.1-5-gafbd4a43")
+        rc, _, _ = self._run_maybe_flash()
+        self.assertEqual(rc, 0)
+        self.assertFalse(self._flash_called())
+
+    def test_short_sha_matching_mcu_with_dirty_suffix_skips_flash(self):
+        """Same as above, but the MCU build was made from a dirty tree
+        so the version carries a -dirty suffix."""
+        self._set_git_soll("afbd4a43")
+        self._set_log_ist("v0.13.1-5-gafbd4a43-dirty")
+        rc, _, _ = self._run_maybe_flash()
+        self.assertEqual(rc, 0)
+        self.assertFalse(self._flash_called())
+
     def test_missing_firmware_config_skips(self):
         os.unlink(os.path.join(
             self.cfg_root, "config", "boards", "btt-kraken",
