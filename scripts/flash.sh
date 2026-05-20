@@ -3,7 +3,7 @@
 # Funktion zum Warten auf den MCU-Neustart
 wait_for_mcu_reboot() {
     local board=$1
-    local timeout=${2:-10} # Standard-Timeout auf 10 Sekunden
+    local timeout=${2:-10}
     local elapsed=0
 
     echo "Waiting for MCU Reboot..."
@@ -21,9 +21,20 @@ wait_for_mcu_reboot() {
     fi
 }
 
+# Argument-Parsing: --auto skippt den DFU-Fallback und exitet bei
+# gescheitertem Serial-Flash mit Code 1.
+auto_mode=0
+for arg in "$@"; do
+    case "$arg" in
+        --auto) auto_mode=1 ;;
+        *) ;;
+    esac
+done
 
-# Sicherstellen, dass das Skript als root ausgeführt wird
-if [ "$EUID" -ne 0 ]; then
+# Sicherstellen, dass das Skript als root ausgeführt wird.
+# THEOS_BYPASS_ROOT_CHECK existiert ausschließlich für die Unit-Tests,
+# die das Skript ohne echte root-Privilegien stubben.
+if [ "$EUID" -ne 0 ] && [ -z "${THEOS_BYPASS_ROOT_CHECK:-}" ]; then
     echo "ERROR: Please run as root"
     exit 1
 fi
@@ -31,10 +42,15 @@ fi
 # Aktuelles Verzeichnis des Skripts ermitteln
 current_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 
-# Pfad zur printer.cfg, die ausgelesen werden soll
-printer_cfg="/home/pi/printer_data/config/printer.cfg"
+# Helper zur rekursiven [mcu]-Suche und zur user_dir-Auflösung
+source "$current_dir/helpers/parse_mcu.sh"
+source "$current_dir/utils.sh"
 
-# Prüfen, ob die printer.cfg existiert und lesbar ist
+# Pfad zur printer.cfg. user_dir() löst auf den Drucker-User auf (pi auf
+# der Pi), nicht auf $HOME — bei einem `sudo flash.sh` wäre $HOME sonst
+# /root und wir würden im falschen Tree lesen/schreiben.
+printer_cfg="$(user_dir)/printer_data/config/printer.cfg"
+
 if [ ! -f "$printer_cfg" ]; then
     echo "Error: Configuration file $printer_cfg not found or not readable!"
     exit 1
@@ -42,31 +58,31 @@ fi
 
 echo "Searching for MCU..."
 
-# Werte aus dem [mcu]-Abschnitt extrahieren
-serial=$(awk '/\[mcu\]/{flag=1; next} /\[/{flag=0} flag && /^[^#]*serial:/ {print $2}' "$printer_cfg")
-cpu=$(awk '/\[mcu\]/{flag=1; next} /\[/{flag=0} flag && /^[^#]*cpu:/ {print $2}' "$printer_cfg")
+mcu_info=$(find_mcu_in_config "$printer_cfg") || {
+    echo "Error: Could not extract 'serial' or 'cpu' from any [mcu] section reachable from $printer_cfg!"
+    exit 1
+}
+serial=$(echo "$mcu_info" | sed -n 's/^serial=//p')
+cpu=$(echo "$mcu_info" | sed -n 's/^cpu=//p')
 
 if [ -z "$serial" ] || [ -z "$cpu" ]; then
-    echo "Error: Could not extract 'serial' or 'cpu' from the [mcu] section in $printer_cfg!"
+    echo "Error: Could not extract 'serial' or 'cpu' from the [mcu] section reachable from $printer_cfg!"
     exit 1
 fi
 
-# Extrahieren des Boards (letzter Teil der Serial)
 board=$(basename "$serial")
 
-# Prüfen, ob ein Konfigurationsordner für das Board existiert
-board_dir=$(realpath "$current_dir/../boards/$board")
+# Board-Verzeichnis liegt unter config/boards/<board> relativ zum scripts/.
+board_dir=$(realpath "$current_dir/../config/boards/$board" 2>/dev/null || true)
 
-if [ ! -d "$board_dir" ]; then
+if [ -z "$board_dir" ] || [ ! -d "$board_dir" ]; then
     echo "Error: $board not supported!"
     exit 1
 fi
 
-# Pfade definieren
 source_file="$board_dir/firmware.config"
-target_file="/home/pi/klipper/.config"
+target_file="$(user_dir)/klipper/.config"
 
-# Firmware-Konfigurationsdatei in Klipper-Verzeichnis kopieren
 if [ -f "$source_file" ]; then
     echo "Copying firmware.config for board $board to $target_file"
     cp "$source_file" "$target_file" || {
@@ -78,20 +94,16 @@ else
     exit 1
 fi
 
-# In das Klipper-Verzeichnis wechseln
-pushd /home/pi/klipper > /dev/null || exit
+pushd "$(user_dir)/klipper" > /dev/null || exit
 
-# Klipper kompilieren
 echo "Building Klipper Firmware..."
 make
 
 echo "Looking for MCU: Serial=$serial, CPU=$cpu, Board=$board"
 
-# Prüfen, ob das in der Konfiguration definierte Gerät existiert
 if [ -e "$serial" ]; then
     echo "MCU found at $serial"
 else
-    #Prüfen, ob es ein USB-Gerät gibt mit der in der Konfiguration definierten CPU
     matching_devices=($(ls /dev/serial/by-id/usb-Klipper_*"$cpu"*-if00 2>/dev/null))
 
     if [ ${#matching_devices[@]} -eq 1 ]; then
@@ -102,74 +114,68 @@ else
         for device in "${matching_devices[@]}"; do
             echo "  - $device"
         done
+        popd > /dev/null
         exit 1
     fi
 fi
 
-# Firmware flashen
+# Erster Flash-Versuch über Serial. Exit-Code von `make flash` zählt:
+# wait_for_mcu_reboot prüft nur die Symlink-Existenz, was bei einem
+# laufenden Drucker immer wahr ist — ohne Exit-Code-Check würde ein
+# fehlgeschlagener Flash als Erfolg gemeldet.
 if [ -e "$serial" ]; then
     echo "Flashing $serial..."
-    sudo make flash FLASH_DEVICE=$serial > /dev/null 2>&1
-
-    # Warten auf MCU-Neustart nach dem ersten Flash-Versuch
-    if wait_for_mcu_reboot "$board"; then
+    if make flash FLASH_DEVICE="$serial" NOSUDO=1 > /dev/null 2>&1 \
+       && wait_for_mcu_reboot "$board"; then
         echo "Flashing successful."
+        popd > /dev/null
         exit 0
     fi
 fi
 
-# Wenn kein Serial-Flash möglich ist, DFU-Modus versuchen
+# --auto-Modus: kein DFU-Fallback, fail-fast.
+if [ "$auto_mode" -eq 1 ]; then
+    echo "Serial flash failed in --auto mode, not entering DFU loop."
+    popd > /dev/null
+    exit 1
+fi
+
 echo "Cannot Flash Board through serial mode, trying DFU mode..."
 echo "Please Reboot your $board in DFU mode..."
 
-# Maximale Wartezeit in Sekunden
 MAX_WAIT=300
 elapsed=0
-
-# Schleife für maximal 300 Sekunden
 while [ $elapsed -lt $MAX_WAIT ]; do
-    # lsusb ausführen und prüfen, ob "Device in DFU Mode" enthalten ist
     OUTPUT=$(lsusb | grep "Device in DFU Mode")
-    
     if [ -n "$OUTPUT" ]; then
-        # ID aus der Ausgabe extrahieren
         serial=$(echo "$OUTPUT" | awk '{print $6}')
         echo "MCU found at $serial"
         echo "Flashing $serial..."
-        sudo make flash FLASH_DEVICE=$serial > /dev/null 2>&1
-
-        # Warten auf MCU-Neustart nach dem ersten Flash-Versuch
-        if wait_for_mcu_reboot "$board"; then
+        if make flash FLASH_DEVICE="$serial" NOSUDO=1 > /dev/null 2>&1 \
+           && wait_for_mcu_reboot "$board"; then
             echo "Flashing successful."
+            popd > /dev/null
             exit 0
-        else
-            # Prüfen ob Board immer noch im DFU Modus
-            OUTPUT=$(lsusb | grep "Device in DFU Mode")
-            if [ -n "$OUTPUT" ]; then
-                echo "Board still in DFU, reflashing..."
-                # ID aus der Ausgabe extrahieren
-                serial=$(echo "$OUTPUT" | awk '{print $6}')
-                sudo make flash FLASH_DEVICE=$serial > /dev/null 2>&1
-
-                # Warten auf MCU-Neustart nach dem ersten Flash-Versuch
-                if wait_for_mcu_reboot "$board"; then
-                    echo "Flashing successful."
-                    exit 0
-                else
-                    echo "Flashing failed."
-                    exit 1
-                fi
+        fi
+        OUTPUT=$(lsusb | grep "Device in DFU Mode")
+        if [ -n "$OUTPUT" ]; then
+            echo "Board still in DFU, reflashing..."
+            serial=$(echo "$OUTPUT" | awk '{print $6}')
+            if make flash FLASH_DEVICE="$serial" NOSUDO=1 > /dev/null 2>&1 \
+               && wait_for_mcu_reboot "$board"; then
+                echo "Flashing successful."
+                popd > /dev/null
+                exit 0
             fi
+            echo "Flashing failed."
+            popd > /dev/null
+            exit 1
         fi
     fi
-
-    # Eine Sekunde warten
     sleep 1
     ((elapsed++))
 done
 
 echo "No board found in DFU Mode, exiting"
+popd > /dev/null
 exit 1
-
-
-popd > /dev/null || exit

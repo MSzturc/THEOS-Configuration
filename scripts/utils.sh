@@ -8,8 +8,8 @@ source "$SCRIPT_DIR"/helpers/log.sh
 source "$SCRIPT_DIR"/helpers/user_dir.sh
 source "$SCRIPT_DIR"/helpers/current_user.sh
 
-# Where to clone THEOS-Configuration repository
-THEOS_CONFIG_PATH="$(user_dir)/THEOS-Configuration"
+# Where to clone THE100-Configuration repository
+THE100_CONFIG_PATH="$(user_dir)/THE100-Configuration"
 
 # Where the user Klipper config is located
 PRINTER_DATA_PATH="$(user_dir)/printer_data"
@@ -60,12 +60,12 @@ is_moonraker_installed() {
     fi
 }
 
-# Function to check if THEOS-Configuration is installed
+# Function to check if THE100-Configuration is installed
 is_configuration_installed() {
-    if [ -d "$THEOS_CONFIG_PATH" ]; then
-        check "THEOS-Configuration folder found. Proceeding..."
+    if [ -d "$THE100_CONFIG_PATH" ]; then
+        check "THE100-Configuration folder found. Proceeding..."
     else
-        error "Error: THEOS-Configuration folder not found at '$THEOS_CONFIG_PATH'."
+        error "Error: THE100-Configuration folder not found at '$THE100_CONFIG_PATH'."
         exit 1
     fi
 }
@@ -96,7 +96,7 @@ ensure_moonraker_permissions() {
         "crowsnest"               
     )
 
-    # TODO: Define THEOS-Configuration as managed service
+    # TODO: Define THE100-Configuration as managed service
 
     # Write the service names to the file, one per line
     {

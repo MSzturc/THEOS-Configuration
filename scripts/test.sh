@@ -14,5 +14,22 @@ else
 fi
 
 
-# Call Test
+# Call Tests
 test_logs
+test_parse_mcu
+test_version
+test_flash_auto_mode
+test_flash_decision
+test_post_checkout_filter
+test_z_tilt_points
+test_dynamic_mesh
+test_twist_compensation
+test_dual_wiring
+test_nozzle_diameter
+test_filament_diameter
+test_primeline
+test_print_pipeline
+test_microsteps
+test_tmc_interpolate
+test_second_homing_speed
+test_safe_z_home
