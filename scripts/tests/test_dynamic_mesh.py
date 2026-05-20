@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for the dynamic bed_mesh box calculation.
 
-Loads THE100-Configuration's dynamic_mesh.cfg through the enhanced
+Loads THEOS-Configuration's dynamic_mesh.cfg through the enhanced
 Klipper config parser and verifies that mesh_min / mesh_max:
 - sit at least bed_mesh_margin away from every bed edge (probe stays
   on the bed; eddy-current sensor never reads infinity), AND

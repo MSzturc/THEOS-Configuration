@@ -10,26 +10,26 @@ KLIPPER_PATH="$(user_dir)/klipper"
 # Where the user Klipper config is located
 KLIPPER_CONFIG_PATH="$(user_dir)/printer_data/config"
 
-# Where to clone THE100-Configuration repository
-THE100_CONFIG_PATH="$(user_dir)/THE100-Configuration"
+# Where to clone THEOS-Configuration repository
+THEOS_CONFIG_PATH="$(user_dir)/THEOS-Configuration"
 
 # Where the Moonraker folder is located
 MOONRAKER_PATH="$(user_dir)/moonraker"
 
-# Branch from MSzturc/THE100-Configuration repo to use during install (default: main)
-THE100_CONFIG_REPOSITORY="https://github.com/MSzturc/THE100-Configuration.git"
+# Branch from MSzturc/THEOS-Configuration repo to use during install (default: main)
+THEOS_CONFIG_REPOSITORY="https://github.com/MSzturc/THEOS-Configuration.git"
 
-# Branch from MSzturc/THE100-Configuration repo to use during install (default: main)
-THE100_CONFIG_BRANCH="main"
+# Branch from MSzturc/THEOS-Configuration repo to use during install (default: main)
+THEOS_CONFIG_BRANCH="main"
 
 download_configuration() {
     
-    if [ -d "$THE100_CONFIG_PATH" ]; then
-        info "Configuration repository already found locally at $THE100_CONFIG_PATH. Skipping download."
+    if [ -d "$THEOS_CONFIG_PATH" ]; then
+        info "Configuration repository already found locally at $THEOS_CONFIG_PATH. Skipping download."
     else
-        info "Configuration repository does not exist at $THE100_CONFIG_PATH. Cloning repository..."
-        if git clone --quiet --branch "$THE100_CONFIG_BRANCH" "$THE100_CONFIG_REPOSITORY" "$THE100_CONFIG_PATH"; then
-            check "Successfully cloned configuration repository to $THE100_CONFIG_PATH."
+        info "Configuration repository does not exist at $THEOS_CONFIG_PATH. Cloning repository..."
+        if git clone --quiet --branch "$THEOS_CONFIG_BRANCH" "$THEOS_CONFIG_REPOSITORY" "$THEOS_CONFIG_PATH"; then
+            check "Successfully cloned configuration repository to $THEOS_CONFIG_PATH."
         else
             error "Failed to clone configuration repository."
             exit 1

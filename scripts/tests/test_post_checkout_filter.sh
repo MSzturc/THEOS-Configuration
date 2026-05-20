@@ -81,19 +81,19 @@ test_enable_dev_hooks_idempotent() {
     echo "test_enable_dev_hooks_idempotent:"
     local tmp; tmp=$(mktemp -d)
     mkdir -p "$tmp/klipper/.git/hooks"
-    mkdir -p "$tmp/THE100-Configuration/scripts/helpers"
+    mkdir -p "$tmp/THEOS-Configuration/scripts/helpers"
     mkdir -p "$tmp/logs"
-    cp "$REPO_ROOT/scripts/enable-dev-hooks.sh" "$tmp/THE100-Configuration/scripts/"
-    cp "$REPO_ROOT/scripts/utils.sh"            "$tmp/THE100-Configuration/scripts/"
+    cp "$REPO_ROOT/scripts/enable-dev-hooks.sh" "$tmp/THEOS-Configuration/scripts/"
+    cp "$REPO_ROOT/scripts/utils.sh"            "$tmp/THEOS-Configuration/scripts/"
     cp "$REPO_ROOT/scripts/post-checkout-klipper.sh" \
-       "$tmp/THE100-Configuration/scripts/"
+       "$tmp/THEOS-Configuration/scripts/"
     for h in log.sh user_dir.sh current_user.sh; do
         cp "$REPO_ROOT/scripts/helpers/$h" \
-           "$tmp/THE100-Configuration/scripts/helpers/"
+           "$tmp/THEOS-Configuration/scripts/helpers/"
     done
 
     HOME="$tmp" SUDO_USER="" BASE_USER="" \
-        bash "$tmp/THE100-Configuration/scripts/enable-dev-hooks.sh" \
+        bash "$tmp/THEOS-Configuration/scripts/enable-dev-hooks.sh" \
         >/dev/null 2>&1
     local rc1=$?
     P_TESTS_RUN=$((P_TESTS_RUN + 1))
@@ -107,7 +107,7 @@ test_enable_dev_hooks_idempotent() {
     local target_before
     target_before=$(readlink "$tmp/klipper/.git/hooks/post-checkout")
     HOME="$tmp" SUDO_USER="" BASE_USER="" \
-        bash "$tmp/THE100-Configuration/scripts/enable-dev-hooks.sh" \
+        bash "$tmp/THEOS-Configuration/scripts/enable-dev-hooks.sh" \
         >/dev/null 2>&1
     local rc2=$?
     local target_after

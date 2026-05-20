@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Maintainer dev-loop: sync ~/klipper to origin/develop, hard-reset the
-# THE100-Configuration to a known baseline, reinstall the configuration,
+# THEOS-Configuration to a known baseline, reinstall the configuration,
 # and re-enable the dev-only post-checkout hook.
 #
 # IMPORTANT: this script removes the post-checkout hook at the top BEFORE
@@ -32,11 +32,9 @@ git checkout develop
 git reset --hard origin/develop
 git pull
 
-cd ~/THE100-Configuration/
+cd ~/THEOS-Configuration/
 git checkout develop
-git pull
-
-git reset f79fe5e --hard
+git reset --hard origin/develop
 git pull
 ./scripts/install-configuration.sh
 

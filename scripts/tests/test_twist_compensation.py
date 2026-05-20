@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for the dynamic axis_twist_compensation calibration box.
 
-Loads THE100-Configuration's twist-compensation.cfg through the enhanced
+Loads THEOS-Configuration's twist-compensation.cfg through the enhanced
 Klipper config parser and verifies that calibrate_start_x / calibrate_end_x
 / calibrate_start_y / calibrate_end_y:
 - sit at least twist_compensation_margin away from every bed edge (probe

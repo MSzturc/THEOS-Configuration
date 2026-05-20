@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for the dynamic z_tilt points calculation.
 
-Loads the THE100-Configuration z-tilt config through the enhanced Klipper
+Loads the THEOS-Configuration z-tilt config through the enhanced Klipper
 config parser (from the MSzturc/klipper fork) and verifies that the
 [z_tilt] `points` option resolves to the expected XY pairs given a set of
 [constants].

@@ -3,7 +3,7 @@
 
 Strategy: build a small fake environment under a tmpdir — a fake $HOME
 containing klipper/.git, printer_data/config/printer.cfg,
-printer_data/logs/klippy.log, and a THE100-Configuration tree with the
+printer_data/logs/klippy.log, and a THEOS-Configuration tree with the
 real scripts. flash.sh, systemctl and git are stubbed by PATH-prepended
 shims that record their invocations. We then source update-klipper.sh
 and call maybe_flash_firmware directly, asserting that flash.sh was
@@ -30,7 +30,7 @@ class FlashDecisionTest(unittest.TestCase):
         os.makedirs(os.path.join(self.home, "printer_data", "logs"))
         # log.sh writes timestamp/log files under $(user_dir)/logs/
         os.makedirs(os.path.join(self.home, "logs"))
-        self.cfg_root = os.path.join(self.home, "THE100-Configuration")
+        self.cfg_root = os.path.join(self.home, "THEOS-Configuration")
         os.makedirs(os.path.join(self.cfg_root, "scripts", "helpers"))
         os.makedirs(os.path.join(self.cfg_root, "config", "boards",
                                  "btt-kraken"))

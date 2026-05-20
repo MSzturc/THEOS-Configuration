@@ -10,27 +10,27 @@ PRINTER_DATA_PATH="$(user_dir)/printer_data"
 # Where the user Klipper config is located
 KLIPPER_CONFIG_PATH="${PRINTER_DATA_PATH}/config"
 
-# Where to clone THE100-Configuration repository
-THE100_CONFIG_PATH="$(user_dir)/THE100-Configuration"
+# Where to clone THEOS-Configuration repository
+THEOS_CONFIG_PATH="$(user_dir)/THEOS-Configuration"
 
 # Where the THEOS Logs are located
 THEOS_LOGS_PATH="$(user_dir)/logs"
 
 update_configuration() {
-    info "Installation of THE100 Configuration..."
+    info "Installation of THEOS Configuration..."
     
-    # Symlink THE100 Configuration (read-only git repository) to the user's config directory
+    # Symlink THEOS Configuration (read-only git repository) to the user's config directory
     info "Creating symbolic links for configuration directories..."
     for dir in config macros scripts; do
         debug "Linking directory: $dir"
-        ln -fsn ${THE100_CONFIG_PATH}/$dir ${KLIPPER_CONFIG_PATH}/$dir
+        ln -fsn ${THEOS_CONFIG_PATH}/$dir ${KLIPPER_CONFIG_PATH}/$dir
     done
 
     info "Creating symbolic links for logs directory..."
     ln -fsn ${THEOS_LOGS_PATH} ${KLIPPER_CONFIG_PATH}/logs
     ln -fsn ${PRINTER_DATA_PATH}/logs/klippy.log ${KLIPPER_CONFIG_PATH}/logs/klipper.log
 
-    info "Installation of THE100 Configuration completed successfully!"
+    info "Installation of THEOS Configuration completed successfully!"
 }
 
 update_udev_rules()
@@ -38,14 +38,14 @@ update_udev_rules()
   info "Updating THEOS Board device symlinks.."
   
   # Remove existing udev rules files in /etc/udev/rules.d/ 
-  # All board-specific udev rule files in THE100-Configuration are prefixed with '98-'
+  # All board-specific udev rule files in THEOS-Configuration are prefixed with '98-'
   rm -f /etc/udev/rules.d/98-*.rules
   
   # Create symbolic links for the updated udev rules from the configuration directory
-  # Source: THE100-Configuration/config/boards/*/*.rules
+  # Source: THEOS-Configuration/config/boards/*/*.rules
   # Destination: /etc/udev/rules.d/ (udev directory where rule files are loaded)
   # This ensures the system uses the latest board-specific udev rules for device management
-  ln -s $(user_dir)/THE100-Configuration/config/boards/*/*.rules /etc/udev/rules.d/
+  ln -s $(user_dir)/THEOS-Configuration/config/boards/*/*.rules /etc/udev/rules.d/
 }
 
 update_sudo_permissions() {
@@ -67,10 +67,10 @@ update_sudo_permissions() {
     # Write the new sudoers rules into the temporary file
     info "Writing new sudo rules to temporary file."
     cat > /tmp/030-theos-githooks << EOF
-$(current_user) ALL=(ALL) NOPASSWD: $(user_dir)/THE100-Configuration/scripts/update-configuration.sh
-$(current_user) ALL=(ALL) NOPASSWD: $(user_dir)/THE100-Configuration/scripts/update-klipper.sh
-$(current_user) ALL=(ALL) NOPASSWD: $(user_dir)/THE100-Configuration/scripts/update-moonraker.sh
-$(current_user) ALL=(ALL) NOPASSWD: $(user_dir)/THE100-Configuration/scripts/flash.sh
+$(current_user) ALL=(ALL) NOPASSWD: $(user_dir)/THEOS-Configuration/scripts/update-configuration.sh
+$(current_user) ALL=(ALL) NOPASSWD: $(user_dir)/THEOS-Configuration/scripts/update-klipper.sh
+$(current_user) ALL=(ALL) NOPASSWD: $(user_dir)/THEOS-Configuration/scripts/update-moonraker.sh
+$(current_user) ALL=(ALL) NOPASSWD: $(user_dir)/THEOS-Configuration/scripts/flash.sh
 EOF
 
     # Set ownership of the temporary file to root

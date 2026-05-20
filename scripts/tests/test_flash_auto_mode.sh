@@ -26,13 +26,13 @@ f_assert_eq() {
 _setup_fake_env() {
     local tmp=$1
     mkdir -p "$tmp/klipper"
-    mkdir -p "$tmp/THE100-Configuration/config/boards/fake-board"
-    mkdir -p "$tmp/THE100-Configuration/scripts/helpers"
+    mkdir -p "$tmp/THEOS-Configuration/config/boards/fake-board"
+    mkdir -p "$tmp/THEOS-Configuration/scripts/helpers"
     mkdir -p "$tmp/printer_data/config"
     mkdir -p "$tmp/logs"
     mkdir -p "$tmp/bin"
     mkdir -p "$tmp/fake-dev"
-    : > "$tmp/THE100-Configuration/config/boards/fake-board/firmware.config"
+    : > "$tmp/THEOS-Configuration/config/boards/fake-board/firmware.config"
     # printer.cfg points at a serial path that REALLY EXISTS in the fake
     # env. flash.sh derives the board from basename($serial), so the
     # symlink basename MUST be "fake-board" — matching the boards/
@@ -61,11 +61,11 @@ exec "$@"
 EOF
     chmod +x "$tmp/bin/systemctl" "$tmp/bin/sudo"
 
-    cp "$REPO_ROOT/scripts/flash.sh" "$tmp/THE100-Configuration/scripts/"
-    cp "$REPO_ROOT/scripts/utils.sh" "$tmp/THE100-Configuration/scripts/"
+    cp "$REPO_ROOT/scripts/flash.sh" "$tmp/THEOS-Configuration/scripts/"
+    cp "$REPO_ROOT/scripts/utils.sh" "$tmp/THEOS-Configuration/scripts/"
     for h in parse_mcu.sh log.sh user_dir.sh current_user.sh; do
         cp "$REPO_ROOT/scripts/helpers/$h" \
-           "$tmp/THE100-Configuration/scripts/helpers/"
+           "$tmp/THEOS-Configuration/scripts/helpers/"
     done
 }
 
@@ -80,7 +80,7 @@ test_flash_auto_skips_dfu_on_serial_fail() {
         PATH="$tmp/bin:$PATH" \
         THEOS_BYPASS_ROOT_CHECK=1 \
         timeout 15 bash \
-        "$tmp/THE100-Configuration/scripts/flash.sh" --auto \
+        "$tmp/THEOS-Configuration/scripts/flash.sh" --auto \
         >"$log" 2>&1
     local rc=$?
 
