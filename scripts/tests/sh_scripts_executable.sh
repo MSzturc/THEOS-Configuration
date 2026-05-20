@@ -2,8 +2,8 @@
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-test_hotend_control_default() {
-    echo "Starting hotend_control_default tests..."
+test_sh_scripts_executable() {
+    echo "Starting sh_scripts_executable tests..."
     local py=""
     for cand in python3 python; do
         if command -v "$cand" >/dev/null 2>&1 \
@@ -16,9 +16,9 @@ test_hotend_control_default() {
         echo "  SKIP - working python interpreter not found on PATH"
         return 0
     fi
-    "$py" "$SCRIPT_DIR/test_hotend_control_default.py" -v
+    "$py" "$SCRIPT_DIR/test_sh_scripts_executable.py" -v
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    test_hotend_control_default
+    test_sh_scripts_executable
 fi

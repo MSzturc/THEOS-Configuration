@@ -34,3 +34,4 @@ test_tmc_interpolate
 test_second_homing_speed
 test_safe_z_home
 test_hotend_control_default
+test_sh_scripts_executable
