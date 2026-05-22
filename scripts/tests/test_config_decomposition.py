@@ -226,6 +226,8 @@ class BaseEssentialsTest(unittest.TestCase):
         self.assertIn("[pa_test]", body)
         self.assertIn("../../macros/print.cfg", body)
         self.assertIn("../../macros/helpers/CG28.cfg", body)
+        # G2/G3 arc support is printer-agnostic, so it ships in the base layer.
+        self.assertIn("[gcode_arcs]", body)
 
 
 class ReferenceAssemblyTest(unittest.TestCase):
