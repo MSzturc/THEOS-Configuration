@@ -36,8 +36,8 @@ class ToolheadMetaTest(unittest.TestCase):
     def test_dualhorn(self):
         fc = load_module("toolheads", "dualhorn", "toolhead.cfg")
         self.assertEqual(fc.get("constants", "toolhead_label"), "DualHorn")
-        # Toolhead carries its hotend/filament domain constants (NOT e_motor —
-        # that lives in the printer meta with the driver tuning).
+        # nozzle/filament domain constants live on the toolhead; e_motor lives
+        # in the printer meta with the driver tuning.
         self.assertEqual(fc.get("constants", "nozzle_diameter"), "0.5")
         self.assertEqual(fc.get("constants", "filament_diameter"), "1.75")
         # Extruder kinematics from extruders/t250-bmg.cfg
@@ -45,21 +45,25 @@ class ToolheadMetaTest(unittest.TestCase):
         self.assertEqual(fc.get("extruder", "gear_ratio"), "50:10")
         # firmware_retraction ships with the t250 extruder leaf
         self.assertTrue(fc.has_section("firmware_retraction"))
+        # The hotend is its own wizard dimension -- the toolhead must not pull
+        # one (no thermistor/heater on the mount itself).
+        self.assertFalse(fc.has_option("extruder", "sensor_type"))
 
     def test_scorpio(self):
         fc = load_module("toolheads", "scorpio", "toolhead.cfg")
         self.assertEqual(fc.get("constants", "toolhead_label"), "Scorpio")
         self.assertEqual(fc.get("constants", "nozzle_diameter"), "0.5")
-        # Scorpio is the DualHorn frame with the t250-vzg extruder (gear 60:10)
-        # and the std6-v2 hotend (PT1000) swapped in.
+        # Scorpio carries the t250-vzg extruder (gear 60:10); the hotend is
+        # selected separately, so no thermistor here.
         self.assertTrue(fc.has_section("extruder"))
         self.assertEqual(fc.get("extruder", "gear_ratio"), "60:10")
-        self.assertEqual(fc.get("extruder", "sensor_type"), "PT1000")
+        self.assertFalse(fc.has_option("extruder", "sensor_type"))
 
     def test_standard(self):
         fc = load_module("toolheads", "standard", "toolhead.cfg")
         self.assertEqual(fc.get("constants", "toolhead_label"), "Standard")
         self.assertTrue(fc.has_section("extruder"))
+        self.assertFalse(fc.has_option("extruder", "sensor_type"))
 
     def test_compatible_printers(self):
         # Toolhead mounts are printer-specific; the wizard filters on this.
@@ -75,6 +79,40 @@ class ToolheadMetaTest(unittest.TestCase):
             load_module("toolheads", "standard",
                         "toolhead.cfg").get("constants",
                                             "compatible_printers"), "t100")
+
+
+class HotendMetaTest(unittest.TestCase):
+    def test_label_and_extruder(self):
+        fc = load_module("hotends", "rapido-uhf", "hotend.cfg")
+        self.assertEqual(fc.get("constants", "hotend_label"), "Rapido UHF")
+        self.assertTrue(fc.has_section("extruder"))
+        self.assertEqual(fc.get("extruder", "sensor_type"),
+                         "ATC Semitec 104NT-4-R025H42G")
+
+    def test_single_heater_hotend_uses_default_wiring(self):
+        # default_wiring resolves heater_pin to the single E_HEATER alias.
+        fc = load_module("hotends", "chc-pro", "hotend.cfg")
+        self.assertEqual(fc.get("extruder", "heater_pin"), "E_HEATER")
+        self.assertFalse(fc.has_section("multi_pin dual_heater"))
+
+    def test_dual_heater_hotend_uses_dual_wiring(self):
+        # STD6 V2 needs two cartridges -- dual_wiring rewires heater_pin onto
+        # the [multi_pin dual_heater] group (E_HEATER + E1_HEATER).
+        fc = load_module("hotends", "std6-v2", "hotend.cfg")
+        self.assertEqual(fc.get("extruder", "heater_pin"),
+                         "multi_pin:dual_heater")
+        self.assertTrue(fc.has_section("multi_pin dual_heater"))
+        self.assertEqual(fc.get("multi_pin dual_heater", "pins"),
+                         "E_HEATER, E1_HEATER")
+
+    def test_all_hotends_carry_a_label(self):
+        import glob
+        base = os.path.join(REPO_ROOT, "config", "hotends")
+        metas = sorted(glob.glob(os.path.join(base, "*", "hotend.cfg")))
+        self.assertGreaterEqual(len(metas), 5)
+        for meta in metas:
+            fc = load(meta)
+            self.assertTrue(fc.get("constants", "hotend_label").strip(), meta)
 
 
 class BedMetaTest(unittest.TestCase):

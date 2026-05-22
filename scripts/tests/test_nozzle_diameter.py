@@ -32,13 +32,13 @@ sys.path.insert(0, KLIPPY_DIR)
 import configfile  # noqa: E402
 
 
-# (hotend filename, supporting wiring include the hotend pulls in)
+# (hotend id, supporting wiring include the hotend pulls in)
 HOTENDS = [
-    ("chc-pro.cfg", "default_wiring.cfg"),
-    ("goliath.cfg", "default_wiring.cfg"),
-    ("mosquito-magnum.cfg", "default_wiring.cfg"),
-    ("rapido-uhf.cfg", "default_wiring.cfg"),
-    ("std6-v2.cfg", "dual_wiring.cfg"),
+    ("chc-pro", "default_wiring.cfg"),
+    ("goliath", "default_wiring.cfg"),
+    ("mosquito-magnum", "default_wiring.cfg"),
+    ("rapido-uhf", "default_wiring.cfg"),
+    ("std6-v2", "dual_wiring.cfg"),
 ]
 
 
@@ -47,9 +47,12 @@ class NozzleDiameterTest(unittest.TestCase):
         self.tmp = tempfile.mkdtemp()
         os.makedirs(os.path.join(self.tmp, "config", "hotends"))
         for hotend, wiring in HOTENDS:
+            os.makedirs(os.path.join(self.tmp, "config", "hotends", hotend))
             shutil.copy(
-                os.path.join(REPO_ROOT, "config", "hotends", hotend),
-                os.path.join(self.tmp, "config", "hotends", hotend),
+                os.path.join(REPO_ROOT, "config", "hotends", hotend,
+                             "hotend.cfg"),
+                os.path.join(self.tmp, "config", "hotends", hotend,
+                             "hotend.cfg"),
             )
             shutil.copy(
                 os.path.join(REPO_ROOT, "config", "hotends", wiring),
@@ -64,7 +67,7 @@ class NozzleDiameterTest(unittest.TestCase):
             [constants]
             {body}
 
-            [include config/hotends/{hotend}]
+            [include config/hotends/{hotend}/hotend.cfg]
         """).format(body=constants_body, hotend=hotend)
         path = os.path.join(self.tmp, "printer.cfg")
         with open(path, "w") as f:

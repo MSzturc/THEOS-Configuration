@@ -31,11 +31,11 @@ import configfile  # noqa: E402
 
 
 HOTENDS = [
-    "chc-pro.cfg",
-    "goliath.cfg",
-    "mosquito-magnum.cfg",
-    "rapido-uhf.cfg",
-    "std6-v2.cfg",
+    "chc-pro",
+    "goliath",
+    "mosquito-magnum",
+    "rapido-uhf",
+    "std6-v2",
 ]
 WIRING_INCLUDES = ["default_wiring.cfg", "dual_wiring.cfg"]
 
@@ -45,10 +45,17 @@ class HotendControlDefaultTest(unittest.TestCase):
         self.tmp = tempfile.mkdtemp()
         hotends_dir = os.path.join(self.tmp, "config", "hotends")
         os.makedirs(hotends_dir)
-        for name in HOTENDS + WIRING_INCLUDES:
+        for wiring in WIRING_INCLUDES:
             shutil.copy(
-                os.path.join(REPO_ROOT, "config", "hotends", name),
-                os.path.join(hotends_dir, name),
+                os.path.join(REPO_ROOT, "config", "hotends", wiring),
+                os.path.join(hotends_dir, wiring),
+            )
+        for hotend in HOTENDS:
+            os.makedirs(os.path.join(hotends_dir, hotend))
+            shutil.copy(
+                os.path.join(REPO_ROOT, "config", "hotends", hotend,
+                             "hotend.cfg"),
+                os.path.join(hotends_dir, hotend, "hotend.cfg"),
             )
 
     def tearDown(self):
@@ -56,7 +63,7 @@ class HotendControlDefaultTest(unittest.TestCase):
 
     def _load(self, hotend):
         cfg = textwrap.dedent("""\
-            [include config/hotends/{hotend}]
+            [include config/hotends/{hotend}/hotend.cfg]
         """).format(hotend=hotend)
         path = os.path.join(self.tmp, "printer.cfg")
         with open(path, "w") as f:

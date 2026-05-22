@@ -2,8 +2,8 @@
 """Tests for hotends/dual_wiring.cfg alias resolution.
 
 Verifies that the include chain
-    config/hotends/std6-v2.cfg
-        -> [include dual_wiring.cfg]
+    config/hotends/std6-v2/hotend.cfg
+        -> [include ../dual_wiring.cfg]
 combined with the BTT Kraken board pin map
     config/boards/btt-kraken/config.cfg  ([board_pins kraken] aliases)
 ends up wiring the dual heater on PF6 and PF7 (and the thermistor on PB1).
@@ -11,11 +11,11 @@ ends up wiring the dual heater on PF6 and PF7 (and the thermistor on PB1).
 The check runs in two stages, mirroring how real Klippy resolves a heater_pin:
   1. The enhanced Klipper config parser (MSzturc/klipper fork) merges the
      includes and exposes [multi_pin dual_heater].pins as alias *names*
-     (E_HEATER, E_HEATER_2) -- aliases are NOT substituted at config-load time.
+     (E_HEATER, E1_HEATER) -- aliases are NOT substituted at config-load time.
   2. The actual substitution is done by klippy/pins.py:PinResolver when MCU
      commands are emitted. We instantiate that class directly with the
      aliases harvested from [board_pins kraken] and assert that an MCU
-     command containing 'pin=E_HEATER' / 'pin=E_HEATER_2' / 'pin=E_TEMPERATURE'
+     command containing 'pin=E_HEATER' / 'pin=E1_HEATER' / 'pin=E_TEMPERATURE'
      is rewritten to PF6 / PF7 / PB1.
 """
 
@@ -56,11 +56,11 @@ class DualWiringResolutionTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
         # Mirror the real on-disk layout so that the relative includes
-        # inside std6-v2.cfg ('[include dual_wiring.cfg]') resolve.
-        for sub in ("config/hotends", "config/boards/btt-kraken"):
+        # inside std6-v2/hotend.cfg ('[include ../dual_wiring.cfg]') resolve.
+        for sub in ("config/hotends/std6-v2", "config/boards/btt-kraken"):
             os.makedirs(os.path.join(self.tmp, sub), exist_ok=True)
         for rel in (
-            "config/hotends/std6-v2.cfg",
+            "config/hotends/std6-v2/hotend.cfg",
             "config/hotends/dual_wiring.cfg",
             "config/boards/btt-kraken/config.cfg",
         ):
@@ -71,7 +71,7 @@ class DualWiringResolutionTest(unittest.TestCase):
         # missing steppers / kinematics never matter at the parse layer.
         printer_cfg = textwrap.dedent("""\
             [include config/boards/btt-kraken/config.cfg]
-            [include config/hotends/std6-v2.cfg]
+            [include config/hotends/std6-v2/hotend.cfg]
             """)
         self.printer_cfg = os.path.join(self.tmp, "printer.cfg")
         with open(self.printer_cfg, "w") as f:
@@ -109,7 +109,7 @@ class DualWiringResolutionTest(unittest.TestCase):
         items = [p.strip()
                  for p in fc.get("multi_pin dual_heater", "pins").split(",")
                  if p.strip()]
-        self.assertEqual(items, ["E_HEATER", "E_HEATER_2"])
+        self.assertEqual(items, ["E_HEATER", "E1_HEATER"])
 
     def test_extruder_sensor_pin_uses_alias(self):
         """The thermistor goes through the same alias indirection."""
@@ -148,7 +148,7 @@ class DualWiringResolutionTest(unittest.TestCase):
         # And the dual-heater wiring must show up among them.
         as_dict = {name: value for name, value in aliases}
         self.assertEqual(as_dict.get("E_HEATER"), "PF6")
-        self.assertEqual(as_dict.get("E_HEATER_2"), "PF7")
+        self.assertEqual(as_dict.get("E1_HEATER"), "PF7")
         self.assertEqual(as_dict.get("E_TEMPERATURE"), "PB1")
 
     def test_kraken_aliases_define_expected_hardware_pins(self):
@@ -158,7 +158,7 @@ class DualWiringResolutionTest(unittest.TestCase):
         fc = self._load()
         aliases = parse_aliases(fc.get("board_pins kraken", "aliases"))
         self.assertEqual(aliases.get("E_HEATER"), "PF6")
-        self.assertEqual(aliases.get("E_HEATER_2"), "PF7")
+        self.assertEqual(aliases.get("E1_HEATER"), "PF7")
         self.assertEqual(aliases.get("E_TEMPERATURE"), "PB1")
 
     def test_pin_resolver_rewrites_aliases_to_hardware_pins(self):
@@ -166,7 +166,7 @@ class DualWiringResolutionTest(unittest.TestCase):
         same PinResolver class board_pins.py uses at runtime, and
         verify that a synthetic MCU command containing
             pin=E_HEATER       -> pin=PF6
-            pin=E_HEATER_2     -> pin=PF7
+            pin=E1_HEATER      -> pin=PF7
             pin=E_TEMPERATURE  -> pin=PB1
         This is the moment the alias actually becomes a hardware pin --
         if this fails the heaters will never fire."""
@@ -189,7 +189,7 @@ class DualWiringResolutionTest(unittest.TestCase):
             "config_digital_out pin=PF6",
         )
         self.assertEqual(
-            resolver.update_command("config_digital_out pin=E_HEATER_2"),
+            resolver.update_command("config_digital_out pin=E1_HEATER"),
             "config_digital_out pin=PF7",
         )
         self.assertEqual(
