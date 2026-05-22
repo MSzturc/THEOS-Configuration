@@ -41,11 +41,12 @@ update_udev_rules()
   # All board-specific udev rule files in THEOS-Configuration are prefixed with '98-'
   rm -f /etc/udev/rules.d/98-*.rules
   
-  # Create symbolic links for the updated udev rules from the configuration directory
-  # Source: THEOS-Configuration/config/boards/*/*.rules
-  # Destination: /etc/udev/rules.d/ (udev directory where rule files are loaded)
-  # This ensures the system uses the latest board-specific udev rules for device management
+  # Create symbolic links for the updated udev rules from the configuration directory.
+  # Boards and accessories (e.g. the ADXL input-shaper MCU) both ship a 98-*.rules
+  # file next to their config; symlink both into /etc/udev/rules.d/ so the device
+  # nodes they declare exist at runtime.
   ln -s $(user_dir)/THEOS-Configuration/config/boards/*/*.rules /etc/udev/rules.d/
+  ln -s $(user_dir)/THEOS-Configuration/config/accessories/*/*.rules /etc/udev/rules.d/ 2>/dev/null || true
 }
 
 update_sudo_permissions() {

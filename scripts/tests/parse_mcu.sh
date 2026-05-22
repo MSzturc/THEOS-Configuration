@@ -196,13 +196,13 @@ EOF
 test_conditional_include_evaluated_t100() {
     echo "test_conditional_include_evaluated_t100:"
     local tmp; tmp=$(make_tmp)
-    mkdir -p "$tmp/printers"
-    cat > "$tmp/printers/t100.cfg" <<'EOF'
+    mkdir -p "$tmp/printers/t100" "$tmp/printers/t250"
+    cat > "$tmp/printers/t100/printer.cfg" <<'EOF'
 [mcu]
 serial: /dev/btt-skr-pico
 cpu: rp2040
 EOF
-    cat > "$tmp/printers/t250.cfg" <<'EOF'
+    cat > "$tmp/printers/t250/printer.cfg" <<'EOF'
 [mcu]
 serial: /dev/btt-kraken
 cpu: stm32h723xx
@@ -211,8 +211,8 @@ EOF
 [constants]
 printer: t100
 
-[include if:${constants.printer == 't250'} printers/t250.cfg]
-[include if:${constants.printer == 't100'} printers/t100.cfg]
+[include if:${constants.printer == 't250'} printers/t250/printer.cfg]
+[include if:${constants.printer == 't100'} printers/t100/printer.cfg]
 EOF
     local out; out=$(find_mcu_in_config "$tmp/printer.cfg")
     assert_equals "serial=/dev/btt-skr-pico" "$(echo "$out" | grep '^serial=')" "t100 path picked"
@@ -223,13 +223,13 @@ EOF
 test_conditional_include_evaluated_t250() {
     echo "test_conditional_include_evaluated_t250:"
     local tmp; tmp=$(make_tmp)
-    mkdir -p "$tmp/printers"
-    cat > "$tmp/printers/t100.cfg" <<'EOF'
+    mkdir -p "$tmp/printers/t100" "$tmp/printers/t250"
+    cat > "$tmp/printers/t100/printer.cfg" <<'EOF'
 [mcu]
 serial: /dev/btt-skr-pico
 cpu: rp2040
 EOF
-    cat > "$tmp/printers/t250.cfg" <<'EOF'
+    cat > "$tmp/printers/t250/printer.cfg" <<'EOF'
 [mcu]
 serial: /dev/btt-kraken
 cpu: stm32h723xx
@@ -241,8 +241,8 @@ EOF
 [constants]
 printer: t250
 
-[include if:${constants.printer == 't100'} printers/t100.cfg]
-[include if:${constants.printer == 't250'} printers/t250.cfg]
+[include if:${constants.printer == 't100'} printers/t100/printer.cfg]
+[include if:${constants.printer == 't250'} printers/t250/printer.cfg]
 EOF
     local out; out=$(find_mcu_in_config "$tmp/printer.cfg")
     assert_equals "serial=/dev/btt-kraken" "$(echo "$out" | grep '^serial=')" "t250 path picked"
@@ -305,17 +305,17 @@ EOF
 
 test_real_repo_printer_cfg() {
     echo "test_real_repo_printer_cfg:"
-    # The user's printer.cfg uses relative includes like
-    # '../../mainsail.cfg' and '../boards/btt-kraken/config.cfg', which
-    # imply the file lives at <root>/<level1>/<level2>/printer.cfg with
-    # mainsail.cfg at <root>/ and boards/ at <root>/<level1>/.
+    # A wizard-generated printer.cfg lives at ~/printer_data/config/printer.cfg
+    # and pulls board/leaf configs via 'config/...' includes that resolve
+    # against the THEOS-Configuration tree symlinked in as
+    # printer_data/config/config. Verify find_mcu_in_config walks that into the
+    # real btt-kraken board config and reads its [mcu].
     local tmp; tmp=$(make_tmp)
     mkdir -p "$tmp/printer_data/config"
-    cp "$REPO_ROOT/printer.cfg" "$tmp/printer_data/config/printer.cfg"
-    # 'boards/' must be a sibling of 'config/' for '../boards/...' to resolve.
-    ln -s "$REPO_ROOT/config/boards" "$tmp/printer_data/boards"
-    # mainsail.cfg is referenced as ../../mainsail.cfg; stub it.
-    : > "$tmp/mainsail.cfg"
+    ln -s "$REPO_ROOT/config" "$tmp/printer_data/config/config"
+    cat > "$tmp/printer_data/config/printer.cfg" <<'EOF'
+[include config/boards/btt-kraken/config.cfg]
+EOF
 
     local out; out=$(find_mcu_in_config "$tmp/printer_data/config/printer.cfg")
     assert_equals "serial=/dev/btt-kraken" "$(echo "$out" | grep '^serial=')" "real printer.cfg serial"
