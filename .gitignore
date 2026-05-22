@@ -1,3 +1,7 @@
 # Lokale Entwickler-printer.cfg (gehört nicht ins Repo — Templates liegen
 # unter config/templates/)
 /printer.cfg
+
+# Python-Bytecode aus den Testläufen (scripts/tests/)
+__pycache__/
+*.py[cod]
