@@ -35,6 +35,7 @@ test_second_homing_speed
 test_safe_z_home
 test_hotend_control_default
 test_fan_shortcuts
+test_stepper_database
 test_decomposition
 test_install_printer_cfg
 test_no_legacy_refs
