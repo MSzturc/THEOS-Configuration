@@ -31,6 +31,7 @@ test_primeline
 test_print_pipeline
 test_microsteps
 test_tmc_interpolate
+test_tmc_autotune_constants
 test_second_homing_speed
 test_safe_z_home
 test_hotend_control_default
