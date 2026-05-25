@@ -21,6 +21,7 @@ test_version
 test_flash_auto_mode
 test_flash_decision
 test_post_checkout_filter
+test_install_configuration
 test_moonraker_branch
 test_z_tilt_points
 test_dynamic_mesh

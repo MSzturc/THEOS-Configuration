@@ -80,10 +80,20 @@ preflight_checks
 download_configuration
 install_logs
 
-# THEOS_IMAGE_BUILD is forwarded so update-klipper.sh can skip the
-# hardware-bound steps (firmware flash + systemctl restart) when this
-# installer runs inside the CustoPiZer chroot.
-sudo THEOS_IMAGE_BUILD="${THEOS_IMAGE_BUILD:-}" "$SCRIPT_DIR"/update-configuration.sh
-sudo THEOS_IMAGE_BUILD="${THEOS_IMAGE_BUILD:-}" "$SCRIPT_DIR"/update-klipper.sh
-sudo THEOS_IMAGE_BUILD="${THEOS_IMAGE_BUILD:-}" "$SCRIPT_DIR"/update-moonraker.sh
-sudo THEOS_IMAGE_BUILD="${THEOS_IMAGE_BUILD:-}" "$SCRIPT_DIR"/install-printer-cfg.sh
+# THEOS_IMAGE_BUILD lets update-klipper.sh skip the hardware-bound steps
+# (firmware flash + systemctl restart) inside the CustoPiZer chroot. Forward it
+# only when set: on the printer a `sudo VAR= script` prefix misses the NOPASSWD
+# sudoers rules (env vars are not in env_keep) and forces a password prompt,
+# breaking the passwordless dev-loop and Moonraker update path.
+sudo_env=()
+[[ -n "${THEOS_IMAGE_BUILD:-}" ]] && sudo_env=(THEOS_IMAGE_BUILD="${THEOS_IMAGE_BUILD}")
+
+sudo "${sudo_env[@]}" "$SCRIPT_DIR"/update-configuration.sh
+sudo "${sudo_env[@]}" "$SCRIPT_DIR"/update-klipper.sh
+sudo "${sudo_env[@]}" "$SCRIPT_DIR"/update-moonraker.sh
+
+# install-printer-cfg.sh only writes the invoking user's own printer_data, so it
+# needs no root — and install-configuration.sh always runs as that user (the
+# image build invokes it via `sudo -u`). A direct call keeps the right ownership
+# and avoids a password prompt (it is not in the NOPASSWD list).
+"$SCRIPT_DIR"/install-printer-cfg.sh
