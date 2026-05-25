@@ -32,11 +32,13 @@ done
 
 # Our forks: move onto develop and force them to match origin exactly. Fetch
 # first so the reset targets the current remote tip, not the (possibly
-# days-old) ref the released image was built with.
+# days-old) ref the released image was built with. `checkout -f` because the
+# released image tracks main where the installer's chmod +x dirties tracked
+# .sh files — a plain checkout would refuse the switch and leave a half-state.
 for repo in ~/klipper ~/THEOS-Configuration; do
     cd "$repo"
     git fetch origin
-    git checkout develop
+    git checkout -f develop
     git reset --hard origin/develop
 done
 
