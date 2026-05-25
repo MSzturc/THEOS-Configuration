@@ -1,12 +1,15 @@
 #!/bin/bash
+set -euo pipefail
 
-# Maintainer dev-loop: sync ~/klipper to origin/develop, hard-reset the
-# THEOS-Configuration to a known baseline, reinstall the configuration,
-# and re-enable the dev-only post-checkout hook.
+# Maintainer dev-loop: turn an officially released image into developer mode —
+# move our forks (~/klipper, ~/THEOS-Configuration) onto their develop branches,
+# force them to match origin, reinstall the configuration, and re-enable the
+# dev-only post-checkout hook.
 #
-# IMPORTANT: this script removes the post-checkout hook at the top BEFORE
-# any `git checkout` happens — otherwise an already-installed hook from a
-# previous run would re-enter the full update path mid-script.
+# IMPORTANT: remove the post-checkout hook BEFORE any `git checkout` — an
+# already-installed hook from a previous run would otherwise re-enter the full
+# update path mid-script.
+# WARNING: `git reset --hard` discards local changes in both repos.
 
 HOOK_PATH=~/klipper/.git/hooks/post-checkout
 if [[ -e "$HOOK_PATH" || -L "$HOOK_PATH" ]]; then
@@ -17,25 +20,25 @@ if [[ -e "$HOOK_PATH" || -L "$HOOK_PATH" ]]; then
     exit 1
 fi
 
-rm -rf ~/printer_data/logs/klippy.log
-touch ~/printer_data/logs/klippy.log
-chown pi:pi ~/printer_data/logs/klippy.log
-chmod 666 ~/printer_data/logs/klippy.log
+# Reset the logs we tail during a dev loop. Ownership/permission fixes are
+# best-effort: a stale root-owned log must not abort the run under set -e.
+for log in ~/printer_data/logs/klippy.log ~/logs/theos.log; do
+    mkdir -p "$(dirname "$log")"
+    rm -f "$log"
+    touch "$log"
+    chown pi:pi "$log" 2>/dev/null || true
+    chmod 666 "$log" 2>/dev/null || true
+done
 
-rm -rf ~/logs/theos.log
-touch ~/logs/theos.log
-chown pi:pi ~/logs/theos.log
-chmod 666 ~/logs/theos.log
+# Our forks: move onto develop and force them to match origin exactly. Fetch
+# first so the reset targets the current remote tip, not the (possibly
+# days-old) ref the released image was built with.
+for repo in ~/klipper ~/THEOS-Configuration; do
+    cd "$repo"
+    git fetch origin
+    git checkout develop
+    git reset --hard origin/develop
+done
 
-cd ~/klipper/
-git checkout develop
-git reset --hard origin/develop
-git pull
-
-cd ~/THEOS-Configuration/
-git checkout develop
-git reset --hard origin/develop
-git pull
-./scripts/install-configuration.sh
-
-./scripts/enable-dev-hooks.sh
+~/THEOS-Configuration/scripts/install-configuration.sh
+~/THEOS-Configuration/scripts/enable-dev-hooks.sh
