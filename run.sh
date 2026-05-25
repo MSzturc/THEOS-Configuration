@@ -44,3 +44,17 @@ done
 
 ~/THEOS-Configuration/scripts/install-configuration.sh
 ~/THEOS-Configuration/scripts/enable-dev-hooks.sh
+
+# Point Moonraker's update manager at develop: the shipped image tracks main,
+# so a dev checkout otherwise trips its "not on official remote/branch" guard.
+# Restart via Moonraker's own API — the dev-loop has no passwordless systemctl.
+MOONRAKER_BRANCH_HELPER=~/THEOS-Configuration/scripts/helpers/moonraker_branch.sh
+MOONRAKER_CONF=~/printer_data/config/moonraker.conf
+if [[ -f "$MOONRAKER_BRANCH_HELPER" && -f "$MOONRAKER_CONF" ]]; then
+    source "$MOONRAKER_BRANCH_HELPER"
+    if set_update_manager_branch "$MOONRAKER_CONF" THEOS-Configuration develop; then
+        curl -sf -X POST \
+            "http://localhost:7125/machine/services/restart?service=moonraker" \
+            >/dev/null 2>&1 || true
+    fi
+fi
